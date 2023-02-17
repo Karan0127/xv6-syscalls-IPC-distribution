@@ -69,6 +69,20 @@ argptr(int n, char **pp, int size)
   return 0;
 }
 
+int
+argptr2(int n, int **pp, int size)
+{
+  int i;
+  struct proc *curproc = myproc();
+ 
+  if(argint(n, &i) < 0)
+    return -1;
+  if(size < 0 || (uint)i >= curproc->sz || (uint)i+size > curproc->sz)
+    return -1;
+  *pp = (int*)i;
+  return 0;
+}
+
 // Fetch the nth word-sized system call argument as a string pointer.
 // Check that the pointer is valid and the string is nul-terminated.
 // (There is no shared writable memory, so the string can't change
@@ -104,6 +118,15 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 
+extern int sys_getyear(void);
+extern int sys_add(void);
+extern int sys_toggle(void);
+extern int sys_ps(void);
+extern int sys_print_count(void);
+extern int sys_send(void);
+extern int sys_recv(void);
+extern int sys_send_multi(void);
+
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_exit]    sys_exit,
@@ -126,7 +149,22 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+// sys_getyear is a pointer to fn that will be containing the def of the system call
+[SYS_getyear] sys_getyear,
+[SYS_add] sys_add,
+[SYS_toggle] sys_toggle,
+[SYS_ps] sys_ps,
+[SYS_print_count] sys_print_count,
+[SYS_send] sys_send,
+[SYS_recv] sys_recv,
+// [SYS_save_IHandler] sys_save_IHandler,
+// [SYS_sig_ret] sys_sig_ret,
+[SYS_send_multi] sys_send_multi,
 };
+
+int trace_on = 0;
+int call_count_history[29] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0};
+char *call_name_history[29] = {"sys_fork", "sys_exit", "sys_wait", "sys_pipe", "sys_read", "sys_kill", "sys_exec", "sys_fstat", "sys_chdir", "sys_dup", "sys_getpid", "sys_sbrk", "sys_sleep", "sys_uptime", "sys_open", "sys_write", "sys_mknod", "sys_unlink", "sys_link", "sys_mkdir", "sys_close", "sys_getyear", "sys_add", "sys_toggle", "sys_ps", "sys_print_count", "sys_send", "sys_recv", "sys_send_multi"};
 
 void
 syscall(void)
@@ -136,6 +174,12 @@ syscall(void)
 
   num = curproc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+    // to print the name of the sys call
+    // cprintf("%d : sys call made\n", num);
+    
+    if(trace_on == 1 && num != 24 && num != 26){
+    	call_count_history[num-1] += 1;
+    }
     curproc->tf->eax = syscalls[num]();
   } else {
     cprintf("%d %s: unknown sys call %d\n",

@@ -7,6 +7,14 @@
 #include "proc.h"
 #include "spinlock.h"
 
+#define MSG_SIZE 8
+#define MAX_MSG 50
+
+char buffer[NPROC][MAX_MSG][8];
+int first[NPROC] = {0};
+int last[NPROC] = {0};
+int size[NPROC] = {0};
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -532,3 +540,101 @@ procdump(void)
     cprintf("\n");
   }
 }
+
+// user-defined to list all processes
+void
+proclist(void)
+{  
+   struct proc *p;
+   acquire(&ptable.lock);
+   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != UNUSED){
+         cprintf("pid:%d name:%s\n", p->pid, p->name);
+      }
+   }
+   release(&ptable.lock);
+}
+
+void send_message(int s_id, int r_id, char *msg){
+  
+  if(size[r_id] >= MAX_MSG){
+    panic("[!] Buffer full!");
+    return;
+  }
+
+  int i;
+  //acquire(&ptable.lock);
+  for(i=0; i<MSG_SIZE; i++){
+    buffer[r_id][last[r_id]][i] = *(msg+i); 
+  }
+  //cprintf("%s\n", buffer[r_id][last[r_id]]);
+  last[r_id]++;
+  size[r_id]++;
+  //release(&ptable.lock);
+
+  struct proc *p;
+  p = &ptable.proc[r_id];
+  if(p->state == UNUSED){
+    acquire(&ptable.lock);
+    wakeup1(&p); 
+    release(&ptable.lock);
+  }
+
+}
+
+int receive_message(char *msg){
+  
+  int id = myproc()->pid;
+  int b;
+
+  //cprintf("messages received %d\n", size[id]);
+  if(size[id] == 0) return -1;
+  // If no messages in the buffer, put the process to sleep
+  
+  // if(size[id] == 0){
+  //   struct proc *p;
+  //   p = &ptable.proc[id];
+
+  //   acquire(&ptable.lock);
+  //   sleep(&p, &ptable.lock); 
+  //   release(&ptable.lock);
+  // }
+   
+  for(b=0; b<MSG_SIZE; b++){
+    *(msg + b) = (buffer[id][first[id]][b]);
+  }
+
+  size[id] -= 1;
+  first[id] += 1;
+  return 0;
+}
+
+
+void send_to_multi(int s_id, int* r_ids, char *msg){
+
+  // put all into buffer
+  int i;
+  int l = 8;
+  for(i=0; i<l; i++){
+    int r_id = *(r_ids + i);
+
+    if(r_id < 0) continue;
+
+    if(size[r_id] >= MAX_MSG){
+      panic("[!] Buffer full!");
+      return;
+    }
+
+    int j;
+    for(j=0; j<MSG_SIZE; j++){
+      buffer[r_id][last[r_id]][j] = *(msg+j);
+    }
+
+    last[r_id] += 1;
+    size[r_id] += 1;
+  }
+
+  
+}
+
+

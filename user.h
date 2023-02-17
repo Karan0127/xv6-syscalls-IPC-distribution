@@ -24,6 +24,17 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 
+int getyear(void);
+int add(int, int);
+int toggle(void);
+int ps(void);
+int print_count(void);
+int send(int, int, void*);
+int recv(void*);
+
+// int save_IHandler(void (*)(int*, int));
+int send_multi(int, int*, void*);
+
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);

@@ -29,3 +29,13 @@ SYSCALL(getpid)
 SYSCALL(sbrk)
 SYSCALL(sleep)
 SYSCALL(uptime)
+
+SYSCALL(getyear)
+SYSCALL(add)
+SYSCALL(toggle)
+SYSCALL(ps)
+SYSCALL(print_count)
+SYSCALL(send)
+SYSCALL(recv)
+
+SYSCALL(send_multi)

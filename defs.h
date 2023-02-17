@@ -121,6 +121,8 @@ int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 
+// void            proclist(void);
+
 // swtch.S
 void            swtch(struct context**, struct context*);
 
@@ -155,6 +157,12 @@ int             argstr(int, char**);
 int             fetchint(uint, int*);
 int             fetchstr(uint, char**);
 void            syscall(void);
+int             argptr2(int, int**, int);
+// int             arg_funcptr(int, void (**)());
+
+// //invoke_sigret.S
+// void 			invoke_sigret_start(void);
+// void 			invoke_sigret_end(void);
 
 // timer.c
 void            timerinit(void);
